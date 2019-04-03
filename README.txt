@@ -2,7 +2,7 @@ EDDI: Efficient Dynamic Discovery of High-Value Information with Partial VAE (ht
 
 For the ease of evaluation, we provide two versions of the code.
 The first version only contains the missing data imputation model using Partial VAE. 
-The second version presents both training and partial VAE and use the single optimal order strategy for feature selection (SING in the paper). 
+The second version presents both training and partial VAE and use the EDDI for feature selection (EDDI and SING in the paper). 
 
 *****Version One: Missing Data Imputation*****
 This code implements partial VAE (PNP) part demonstrated on a UCI dataset.
@@ -20,8 +20,8 @@ This code will save the trained model to your_directory/model. To impute new dat
 In case of missing data in the training set, you can use the same train set as a test set to obtain the imputing results. 
 The code also computes the test RMSE for imputed missing data and the result is printed on the console. 
 
-*****Version Two: Single Optimal Feature Ordering*****
-This code implements partial VAE (PNP) + SING together demonstrated on a UCI dataset.
+*****Version Two: EDDI Optimal Feature Ordering*****
+This code implements partial VAE (PNP) + EDDI/SING/RAND together demonstrated on a UCI dataset.
 
 To run this code:
 
@@ -35,7 +35,7 @@ Random test set entries are removed for imputation quality evaluation.
 
 Output:
 This code will run Partial VAE on the training set and use the trained model for the sequential feature selection as we presented in the paper. 
-This code will output the result comparing RAND and SING in the paper in the form of information curve as presented in the paper. 
+This code will output the result comparing EDDI, RAND and SING in the paper in the form of information curve as presented in the paper. 
 This code will also output the information gain for each feature selection step. These are stored in your_directory/model.
 
 
