@@ -44,7 +44,7 @@ File Structure:
 - data: data/boston/d0.xls
 '''
 ### load models and functions
-from active_learning_functions_dropfix import *
+from active_learning_functions import *
 #### Import libraries
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
