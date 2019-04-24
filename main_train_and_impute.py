@@ -42,7 +42,7 @@ File Structure:
 
 '''
 ### load models and functions
-from train_and_test_functions_dropfix import *
+from train_and_test_functions import *
 #### Import libraries
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
