@@ -71,7 +71,7 @@ Data_train, Data_test, mask_train, mask_test = train_test_split(
 Repeat = args.repeat
 #Training Partial VAE and then apply Random order feature selection (RAND in the paper) and single order feature selection (SING in the paper)
 #generate information curve and per step information gain with RAND and SING.
-# p_vae_active_learning(Data_train,mask_train,Data_test,mask_test,args.epochs,args.latent_dim,args.batch_size,args.p,args.K,args.M,Repeat)
+p_vae_active_learning(Data_train,mask_train,Data_test,mask_test,args.epochs,args.latent_dim,args.batch_size,args.p,args.K,args.M,Repeat)
 
 
 ### visualize active learning
