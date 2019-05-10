@@ -54,9 +54,15 @@ parser.add_argument(
     metavar='M',
     help='Number of MC samples when perform imputing')
 parser.add_argument(
+    '--eval',
+    type=str,
+    default='rmse',
+    metavar='eval',
+    help='eval: evaluation metric of active learning. ''rmse'':rmse; ''nllh'':negative log likelihood')
+parser.add_argument(
     '--repeat',
     type=int,
-    default=10,
+    default=5,
     metavar='repeat',
     help='Number of repeats of the active learning experiment')
 parser.add_argument(
@@ -76,7 +82,7 @@ ENCODER_WEIGHTS = os.path.join(args.output_dir, 'encoder.tensorflow')
 FINETUNED_DECODER_WEIGHTS = os.path.join(args.output_dir, 'generator.tensorflow')
 rs = 42 # random seed
 
-def p_vae_active_learning(Data_train,mask_train,Data_test,mask_test,epochs,latent_dim,batch_size,p,K,M,Repeat,estimation_method=0):
+def p_vae_active_learning(Data_train,mask_train,Data_test,mask_test,epochs,latent_dim,batch_size,p,K,M,eval,Repeat,estimation_method=0):
     '''
     This function loads a pretrained p-VAE model, and performs active learning using single global strategy.
     Note that we assume that the last column of x is the target variable of interest
@@ -87,6 +93,7 @@ def p_vae_active_learning(Data_train,mask_train,Data_test,mask_test,epochs,laten
     :param latent_dim: latent dimension of partial VAE.
     :param K: dimension of feature map of PNP encoder
     :param M: number of samples used for MC sampling
+    :param eval: evaluation metric of active learning. 'rmse':rmse; 'nllh':negative log likelihood
     :param Repeat: number of repeats.
     :param estimation_method: what method to use for single ordering information reward estimation.
             In order to calculate the single best ordering, we need to somehow marginalize (average) the
@@ -96,6 +103,7 @@ def p_vae_active_learning(Data_train,mask_train,Data_test,mask_test,epochs,laten
             - estimation_method = 1: information reward marginalized using the data distribution p_{data}(x_o)
     :return: None (active learning results are saved to args.output_dir)
     '''
+
     for r in range(Repeat):
         ## train partial VAE
         tf.reset_default_graph()
@@ -166,7 +174,7 @@ def p_vae_active_learning(Data_train,mask_train,Data_test,mask_test,epochs,laten
 
                 ## evaluate likelihood at initial stage (no observation)
                 negative_predictive_llh, uncertainty = vae.predictive_loss(
-                    x, mask, M)
+                    x, mask,eval, M)
                 information_curve_RAND[r, :, 0] = negative_predictive_llh
                 for t in range(OBS_DIM - 1 ):
                     print("Repeat = {:.1f}".format(r))
@@ -175,7 +183,7 @@ def p_vae_active_learning(Data_train,mask_train,Data_test,mask_test,epochs,laten
                     io = np.eye(OBS_DIM)[i_optimal[:, t]]
                     mask = mask + io
                     negative_predictive_llh, uncertainty = vae.predictive_loss(
-                        x, mask, M)
+                        x, mask,eval, M)
                     information_curve_RAND[r, :, t +
                                            1] = negative_predictive_llh
 
@@ -189,7 +197,7 @@ def p_vae_active_learning(Data_train,mask_train,Data_test,mask_test,epochs,laten
                 mask[:, -1] = 0  # Note that no matter how you initialize mask, we always keep the target variable (last column) unobserved.
 
                 negative_predictive_llh, uncertainty = vae.predictive_loss(
-                    x, mask, M)
+                    x, mask,eval, M)
                 information_curve_SING[r, :, 0] = negative_predictive_llh
 
                 for t in range(OBS_DIM - 1 ): # t is a indicator of step
@@ -226,7 +234,7 @@ def p_vae_active_learning(Data_train,mask_train,Data_test,mask_test,epochs,laten
                     action_SING[r, :, t] = i_optimal
                     mask = mask + io*mask_test # this mask takes into account both data missingness and missingness of unselected features
                     negative_predictive_llh, uncertainty = vae.predictive_loss(
-                        x, mask, M)
+                        x, mask,eval, M)
                     mask2 = mask2 + io # this mask only stores missingess of unselected features, i.e., which features has been selected of each data
                     information_curve_SING[r, :, t +
                                            1] = negative_predictive_llh
@@ -242,7 +250,7 @@ def p_vae_active_learning(Data_train,mask_train,Data_test,mask_test,epochs,laten
                 mask[:,-1] = 0  # Note that no matter how you initialize mask, we always keep the target variable (last column) unobserved.
                 ## evaluate likelihood at initial stage (no observation)
                 negative_predictive_llh, uncertainty = vae.predictive_loss(
-                    x, mask, M)
+                    x, mask, eval,M)
                 information_curve_CHAI[r, :, 0] = negative_predictive_llh
 
                 for t in range(OBS_DIM - 1): # t is a indicator of step
@@ -266,7 +274,7 @@ def p_vae_active_learning(Data_train,mask_train,Data_test,mask_test,epochs,laten
 
                     mask = mask + io # this mask takes into account both data missingness and missingness of unselected features
                     negative_predictive_llh, uncertainty = vae.predictive_loss(
-                        x, mask, M)
+                        x, mask, eval,M)
                     mask2 = mask2 + io # this mask only stores missingess of unselected features, i.e., which features has been selected of each data
                     print(mask2[0:5, :])
 
@@ -315,6 +323,8 @@ def p_vae_active_learning(Data_train,mask_train,Data_test,mask_test,epochs,laten
         im=im_CHAI)
 
     return None
+
+
 
 def train_p_vae(Data_train,mask_train, epochs, latent_dim,batch_size, p, K,iteration):
     '''

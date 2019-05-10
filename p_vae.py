@@ -266,44 +266,66 @@ class PN_Plus_VAE(object):
         return loss, kl, recon
 
     ## predictive likelihood and uncertainties
-    def predictive_loss(self, x, mask, M):
+    def predictive_loss(self, x, mask, eval,M):
         '''
         This function computes predictive losses (negative llh).
         This is used for active learning phase.
         We assume that the last column of x is the target variable of interest
         :param x: data matrix, the last column of x is the target variable of interest
         :param mask: mask that indicates observed data and missing data locations
+        :param eval: evaluation metric of active learning. 'rmse':rmse; 'nllh':negative log likelihood
         :return: MAE and RMSE
         '''
+        if eval == 'rmse':
+            mse = 0
+            uncertainty_data = np.zeros((x.shape[0], M))
+            for m in range(M):
+                decoded = self._sesh.run(
+                    self.decoded, feed_dict={
+                        self.x: x,
+                        self.mask: mask
+                    })
 
-        llh = 0
-        lh = 0
-        uncertainty_data = np.zeros((x.shape[0], M))
-        for m in range(M):
-            decoded = self._sesh.run(
-                self.decoded, feed_dict={
-                    self.x: x,
-                    self.mask: mask
-                })
+                target = x[:, -1]
+                output = decoded[:, -1]
+                uncertainty_data[:, m] = decoded[:, -1]
+                mse += np.square(target - output)
 
-            target = x[:, -1]
-            output = decoded[:, -1]
-            uncertainty_data[:, m] = decoded[:, -1]
-            if self._obs_distrib == 'Bernoulli':
-                llh += target * (np.log(output + 1e-8)) + (1. - target) * (
-                    np.log((1. - output) + 1e-8))
-            else:
-                lh += np.exp(-0.5 * np.square(target - output) / (
-                    np.square(self._obs_std)) - np.log(self._obs_std) - 0.5 * np.log(2 * np.pi))
+            uncertainty = uncertainty_data.std(axis=1)
 
-        uncertainty = uncertainty_data.std(axis=1)
-
-        if self._obs_distrib == 'Bernoulli':
-            nllh = -llh / M
+            loss = mse / M
         else:
-            nllh = -np.log(lh / M)
+            llh = 0
+            lh = 0
+            uncertainty_data = np.zeros((x.shape[0], M))
+            for m in range(M):
+                decoded = self._sesh.run(
+                    self.decoded, feed_dict={
+                        self.x: x,
+                        self.mask: mask
+                    })
 
-        return nllh, uncertainty
+                target = x[:, -1]
+                output = decoded[:, -1]
+                uncertainty_data[:, m] = decoded[:, -1]
+                if self._obs_distrib == 'Bernoulli':
+                    llh += target * (np.log(output + 1e-8)) + (1. - target) * (
+                        np.log((1. - output) + 1e-8))
+                else:
+                    lh += np.exp(-0.5 * np.square(target - output) / (
+                        np.square(self._obs_std)) - np.log(self._obs_std) - 0.5 * np.log(2 * np.pi))
+
+            uncertainty = uncertainty_data.std(axis=1)
+
+            if self._obs_distrib == 'Bernoulli':
+                nllh = -llh / M
+            else:
+                nllh = -np.log(lh / M)
+
+            loss = nllh
+
+
+        return loss, uncertainty
 
     def impute_losses(self, x, mask_obs, mask_target):
         '''
