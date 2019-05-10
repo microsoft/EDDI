@@ -103,6 +103,8 @@ This code will also output the information gain for each feature selection step.
 
 - K: the dimension of the feature map (h) dimension of PNP encoder. Default: 20
 
+- eval: only for our active learning module. evaluation metric of active learning. 'rmse':rmse (default); 'nllh':negative log likelihood
+
 - M: Number of MC samples when perform imputing. Default: 50
 
 - data_dir: Directory where UCI dataset is stored.
