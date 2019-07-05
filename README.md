@@ -29,6 +29,8 @@ Input:
 
 In this example, we use the Boston house dataset. (https://archive.ics.uci.edu/ml/machine-learning-databases/housing/)
 
+Preparing the data: we store the data under data/boston/d0.xls as default. An example of data format is provided in d0.xls (please note that it does not contain any real data since we cannot release data). Currently, we only support continuous variables.
+
 We split the dataset into train and test set in our code. 
 
 Random test set entries are removed for imputation quality evaluation. 
