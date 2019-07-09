@@ -29,7 +29,7 @@ Input:
 
 In this example, we use the Boston house dataset. (https://archive.ics.uci.edu/ml/machine-learning-databases/housing/)
 
-Preparing the data: we store the data under data/boston/d0.xls as default. An example of data format is provided in d0.xls (please note that it does not contain any real data since we cannot release data). Currently, we only support continuous variables.
+**Preparing the data**: we store the data under data/boston/d0.xls as default. An example of data format is provided in **d0.xls** (please note that it does not contain any real data since we cannot release data). Currently, **we only support continuous variables**. For our default setting, the **target variable of active learning needs to be placed at the last column of the data matrix**. And we require **the variable names to be put in the first row** of the .xls file. 
 
 We split the dataset into train and test set in our code. 
 
