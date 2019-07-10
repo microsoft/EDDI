@@ -113,7 +113,7 @@ if args.eval == 'rmse':
     ax1.legend(bbox_to_anchor=(0.0, 1.02, 1., .102), mode="expand", loc=3,
                ncol=1, borderaxespad=0., prop={'size': 20}, frameon=False)
     plt.show()
-    plt.savefig(args.output_dir + '/PNP_all_IC_curves.eps', format='eps', dpi=200, bbox_inches='tight')
+    plt.savefig(args.output_dir + '/PNP_all_IC_curves.png', format='png', dpi=200, bbox_inches='tight')
 else:
     ax1.plot((IC_RAND[:,:,0:].mean(axis=1)).mean(axis = 0),'gs',linestyle = '-.', label =  'PNP+RAND')
     ax1.errorbar(np.arange(IC_RAND.shape[2]), (IC_RAND[:,:,0:].mean(axis=1)).mean(axis = 0), yerr=(IC_RAND[:,:,0:].mean(axis=1)).std(axis = 0)/np.sqrt(IC_SING.shape[0]),ecolor='g',fmt = 'gs')
@@ -130,6 +130,6 @@ else:
     ax1.legend(bbox_to_anchor=(0.0, 1.02, 1., .102), mode = "expand", loc=3,
                ncol=1, borderaxespad=0.,prop={'size': 20}, frameon=False)
     plt.show()
-    plt.savefig(args.output_dir+'/PNP_all_IC_curves.eps', format='eps', dpi=200,bbox_inches='tight')
+    plt.savefig(args.output_dir+'/PNP_all_IC_curves.png', format='png', dpi=200,bbox_inches='tight')
 
 

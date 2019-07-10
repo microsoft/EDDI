@@ -1,3 +1,4 @@
+from __future__ import division
 from p_vae import *
 from codings import *
 import numpy as np
@@ -360,7 +361,7 @@ def train_p_vae(Data_train,mask_train, epochs, latent_dim,batch_size, p, K,itera
 
 
     if iteration == -1:
-        n_it = int(np.ceil(n_train / kwargs['batch_size']))
+        n_it = int(np.ceil(n_train / float(kwargs['batch_size'])))
     else:
         n_it = iteration
 
@@ -378,7 +379,7 @@ def train_p_vae(Data_train,mask_train, epochs, latent_dim,batch_size, p, K,itera
         for it in range(n_it):
 
             if iteration == -1:
-                batch_indices = list_train[it:it + min(kwargs['batch_size'], n_train - 1)]
+                batch_indices = list_train[it*kwargs['batch_size']:min(it*kwargs['batch_size'] + kwargs['batch_size'], n_train - 1)]
             else:
                 batch_indices = sample(range(n_train), kwargs['batch_size'])
 
@@ -391,7 +392,7 @@ def train_p_vae(Data_train,mask_train, epochs, latent_dim,batch_size, p, K,itera
             #     if np.sum(mask_drop>0):
             #         break
 
-            DROPOUT_TRAIN = np.minimum(np.random.rand(kwargs['batch_size'], obs_dim), p)
+            DROPOUT_TRAIN = np.minimum(np.random.rand(mask_train_batch.shape[0], obs_dim), p)
             while True:
                 # mask_drop = np.array([bernoulli.rvs(1 - DROPOUT_TRAIN)] )
                 mask_drop = bernoulli.rvs(1 - DROPOUT_TRAIN)

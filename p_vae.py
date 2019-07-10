@@ -333,10 +333,10 @@ class PN_Plus_VAE(object):
         :param x: data matrix
         :param mask_obs: mask that indicates observed data and missing data locations
         :param mask_target: mask that indicates the test data locations
-        :return: MAE and RMSE
+        :return: squared error (SE) and RMSE
         '''
 
-        MAE = 0
+        SE = 0
         RMSE = 0
         for m in range(self._M):
             decoded = self._sesh.run(self.decoded,
@@ -344,12 +344,25 @@ class PN_Plus_VAE(object):
 
             target = x * mask_target
             output = decoded * mask_target
-            MAE += np.sum(np.abs(target - output)) / np.sum(mask_target)
+            SE += np.sum(np.square(target - output))
             RMSE += np.sqrt(np.sum(np.square(target - output)) / np.sum(mask_target))
 
-        MAE = MAE / self._M
+        SE = SE / self._M
         RMSE = RMSE / self._M
-        return MAE, RMSE
+        return SE, RMSE
+    def get_imputation(self, x, mask_obs):
+        '''
+        This function returns the mean of imputation samples from partial vae
+        :param x: data matrix
+        :param mask_obs: mask that indicates observed data and missing data locations
+        :return: mean of imputation samples from partial vae
+        '''
+        decs = []
+        for m in range(self._M):
+           decoded = self._sesh.run(self.decoded,
+           feed_dict={self.x: x, self.mask: mask_obs})
+           decs.append(decoded)
+        return np.stack(decs).mean(axis=0)
 
     ## generate partial inference samples
     def im(self, x, mask):

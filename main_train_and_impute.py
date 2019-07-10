@@ -61,35 +61,46 @@ max_Data = 1  #
 min_Data = 0  #
 Data_std = (Data - Data.min(axis=0)) / (Data.max(axis=0) - Data.min(axis=0))
 Data = Data_std * (max_Data - min_Data) + min_Data
-Mask = np.ones(Data.shape) # This is a mask indicating missingness, 1 = observed, 0 = missing.
+# Data = (Data-Data.mean(0))/np.std(Data,0)
+#Mask = np.ones(Data.shape) # This is a mask indicating missingness, 1 = observed, 0 = missing.
+missing_mask = np.random.rand(*Data.shape) <0.7
 # this UCI data is fully observed. you should modify the set up of Mask if your data contains missing data.
 
 ### split the data into train and test sets
-Data_train, Data_test, mask_train, mask_test = train_test_split(
-        Data, Mask, test_size=0.1, random_state=rs)
+#Data_train, Data_test, mask_train, mask_test = train_test_split(
+#        Data, Mask, test_size=0.1, random_state=rs)
+Data_train = Data
+mask_train = missing_mask
+Data_test = Data
+print('number of 0s (missing):', np.sum(1-mask_train))
+print('number of 1s (observed) ', np.sum(mask_train))
 
 ### Train the model and save the trained model.
 vae = train_p_vae(Data_train,mask_train, args.epochs, args.latent_dim, args.batch_size,args.p, args.K,args.iteration)
 
 ### Test imputating model on the test set
 ## Calculate test ELBO of observed test data (will load the pre-trained model). Note that this is NOT imputing.
-tf.reset_default_graph()
-test_loss = test_p_vae_marginal_elbo(Data_test,mask_test, args.latent_dim,args.K)
+#tf.reset_default_graph()
+#test_loss = test_p_vae_marginal_elbo(Data_test,mask_test, args.latent_dim,args.K)
 ## Calculate imputation RMSE (conditioned on observed data. will load the pre-trained model)
 ## Note that here we perform imputation on a new dataset, whose observed entries are not used in training.
 ## this will under estimate the imputation performance, since in principle all observed entries should be used to train the model.
 tf.reset_default_graph()
 Data_ground_truth = Data_test
-mask_obs = np.array([bernoulli.rvs(1 - 0.3, size=Data_ground_truth.shape[1]*Data_ground_truth.shape[0])]) # manually create missing data on test set
-mask_obs = mask_obs.reshape(Data_ground_truth.shape)
+#mask_obs = np.array([bernoulli.rvs(1 - 0.3, size=Data_ground_truth.shape[1]*Data_ground_truth.shape[0])]) # manually create missing data on test set
+#mask_obs = mask_obs.reshape(Data_ground_truth.shape)
+mask_obs= missing_mask
 Data_observed = Data_ground_truth*mask_obs
 
-mask_target = 1-mask_obs
+mask_target = 1-mask_obs # During test time, we use 1 to indicate missingness for imputing target.
 # This line below is optional. Turn on this line means that we use the new comming testset to continue update the imputing model. Turn off this linea means that we only use the pre-trained model to impute without futher updating the model.
 # vae = train_p_vae(Data_ground_truth,mask_obs, args.epochs, args.latent_dim, args.batch_size,0, args.K,args.iteration)
 tf.reset_default_graph()
-RMSE = impute_p_vae(Data_observed,mask_obs,Data_ground_truth,mask_target,args.latent_dim,args.batch_size,args.K,args.M)
-
+# Note that by default, the model calculate RMSE averaged over different imputing samples from partial vae.
+RMSE,X_fill_mean_eddi = impute_p_vae(Data_observed,mask_obs,Data_ground_truth,mask_target,args.latent_dim,args.batch_size,args.K,args.M)
+# Alternatively, you can also first compute the mean of partial vae imputing samples, then calculated RMSE.
+Diff_eddi=X_fill_mean_eddi*mask_target - Data*mask_target
+print('test impute RMSE eddi (estimation 2):', np.sqrt(np.sum(Diff_eddi**2)/np.sum(mask_target)))
 
 
 

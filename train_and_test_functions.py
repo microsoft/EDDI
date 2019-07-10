@@ -1,5 +1,5 @@
 
-
+from __future__ import division
 from p_vae import *
 from codings import *
 import numpy as np
@@ -103,7 +103,7 @@ def train_p_vae(Data_train,mask_train, epochs, latent_dim,batch_size, p, K,itera
 
 
     if iteration == -1:
-        n_it = int(np.ceil(n_train / kwargs['batch_size']))
+        n_it = int(np.ceil(n_train / float(kwargs['batch_size'])))
     else:
         n_it = iteration
 
@@ -121,13 +121,13 @@ def train_p_vae(Data_train,mask_train, epochs, latent_dim,batch_size, p, K,itera
         for it in range(n_it):
 
             if iteration == -1:
-                batch_indices = list_train[it:it + min(kwargs['batch_size'], n_train - 1)]
+                batch_indices = list_train[it*kwargs['batch_size']:min(it*kwargs['batch_size'] + kwargs['batch_size'], n_train - 1)]
             else:
                 batch_indices = sample(range(n_train), kwargs['batch_size'])
 
             x = Data_train[batch_indices, :]
             mask_train_batch = mask_train[batch_indices, :]
-            DROPOUT_TRAIN = np.minimum(np.random.rand(kwargs['batch_size'],obs_dim), p)
+            DROPOUT_TRAIN = np.minimum(np.random.rand(mask_train_batch.shape[0],obs_dim), p)
             while True:
                 # mask_drop = np.array([bernoulli.rvs(1 - DROPOUT_TRAIN)] )
                 mask_drop = bernoulli.rvs(1 - DROPOUT_TRAIN)
@@ -220,26 +220,27 @@ def impute_p_vae(Data_observed,mask_observed,Data_ground_truth,mask_target,laten
     }
     vae = PN_Plus_VAE(**kwargs)
 
-    impute_loss_RMSE = 0.
+    impute_loss_SE = 0.
     list_data = np.arange(n_data)
     # np.random.shuffle(list_data)
 
-    n_it = int(np.ceil(n_data / kwargs['batch_size']))
+    n_it = int(np.ceil(n_data / float(kwargs['batch_size'])))
     # iterate through batches
     for it in range(n_it):
-        batch_indices = list_data[it:it + min(kwargs['batch_size'], n_data - 1)]
+        batch_indices = list_data[it*kwargs['batch_size']:min(it*kwargs['batch_size'] + kwargs['batch_size'], n_data - 1)]
 
-        _, impute_loss_RMSE_batch = vae.impute_losses(Data_ground_truth[batch_indices, :], mask_test_obs[batch_indices, :],
+        impute_loss_SE_batch, impute_loss_RMSE_batch = vae.impute_losses(Data_ground_truth[batch_indices, :], mask_test_obs[batch_indices, :],
                                                         mask_test_target[batch_indices, :])
 
-        impute_loss_RMSE += impute_loss_RMSE_batch
+        impute_loss_SE += impute_loss_SE_batch
 
-    impute_loss_RMSE /= (n_it)
+    impute_loss_RMSE = np.sqrt(impute_loss_SE/(np.sum(mask_test_target)))
 
 
+    X_fill = vae.get_imputation( Data_ground_truth, mask_test_obs)
 
-    print('test impute RMSE: {:.2f}'
+    print('test impute RMSE eddi (estimation 1): {:.2f}'
             .format(impute_loss_RMSE))
 
 
-    return impute_loss_RMSE
+    return impute_loss_RMSE, X_fill
